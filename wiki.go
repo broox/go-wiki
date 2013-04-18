@@ -1,7 +1,9 @@
 package main
+
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 )
 
 // A struct to represent a wiki page
@@ -27,9 +29,21 @@ func loadPage(title string) (*Page, error) {
 	return &Page{ Title: title, Body: body }, nil
 }
 
+const pathPrefix = "/view/"
+const lenPath = len(pathPrefix)
+
+// add a view to load wiki pages by title at /view/
+func viewHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[lenPath:]
+	p, err := loadPage(title)
+	if err != nil {
+		fmt.Fprintf(w, "<h1>Error loading page: %s</h1><div>%s</div>", title, err)
+		return
+	}
+	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+}
+
 func main() {
-    p1 := &Page{Title: "TestPage", Body: []byte("This is a sample Page.")}
-    p1.save()
-    p2, _ := loadPage("TestPage")
-    fmt.Println(string(p2.Body))
+        http.HandleFunc(pathPrefix, viewHandler)
+        http.ListenAndServe(":8080", nil)
 }
