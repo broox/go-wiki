@@ -53,6 +53,14 @@ func editHandler(writer http.ResponseWriter, request *http.Request) {
 	renderTemplate(writer, "edit", page)
 }
 
+func saveHandler(writer http.ResponseWriter, request *http.Request) {
+	title := request.URL.Path[lenPath:]
+	body := request.FormValue("body")
+	p := &Page{ Title: title, Body: []byte(body) }
+	p.save()
+	http.Redirect(writer, request, "/view/"+title, http.StatusFound)
+}
+
 func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
     view, _ := template.ParseFiles(filename + ".html")
     view.Execute(writer, page)
@@ -61,5 +69,6 @@ func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
 func main() {
         http.HandleFunc(pathPrefix, viewHandler)
         http.HandleFunc("/edit/", editHandler)
+	http.HandleFunc("/save/", saveHandler)
         http.ListenAndServe(":8080", nil)
 }
