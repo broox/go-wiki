@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"html/template"
@@ -38,7 +37,8 @@ func viewHandler(writer http.ResponseWriter, request *http.Request) {
 	title := request.URL.Path[lenPath:]
 	page, err := loadPage(title)
 	if err != nil {
-		fmt.Fprintf(writer, "<h1>Error loading page: %s</h1><div>%s</div>", title, err)
+		// If page can't be found, redirect to the form so we can create it
+		http.Redirect(writer, request, "/edit/"+title, http.StatusFound)
 		return
 	}
 	renderTemplate(writer, "view", page)
