@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"html/template"
 )
 
 // A struct to represent a wiki page
@@ -33,28 +34,30 @@ const pathPrefix = "/view/"
 const lenPath = len(pathPrefix)
 
 // add a view to load wiki pages by title at /view/
-func viewHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[lenPath:]
-	p, err := loadPage(title)
+func viewHandler(writer http.ResponseWriter, request *http.Request) {
+	title := request.URL.Path[lenPath:]
+	page, err := loadPage(title)
 	if err != nil {
-		fmt.Fprintf(w, "<h1>Error loading page: %s</h1><div>%s</div>", title, err)
+		fmt.Fprintf(writer, "<h1>Error loading page: %s</h1><div>%s</div>", title, err)
 		return
 	}
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+	renderTemplate(writer, "view", page)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[lenPath:]
-	p, err := loadPage(title)
+func editHandler(writer http.ResponseWriter, request *http.Request) {
+	title := request.URL.Path[lenPath:]
+	page, err := loadPage(title)
 	if err != nil {
-		p = &Page{ Title: title }
+		page = &Page{ Title: title }
 	}
-	fmt.Fprintf(w, "<h1>Editing %s</h1>" +
-		       "<form action=\"/save/%s\" method=\"POST\">" +
-		       "<textarea name=\"body\">%s</textarea><br>" +
-		       "<input type=\"submit\" value=\"Save\">" +
-		       "</form>", p.Title, p.Title, p.Body)
+	renderTemplate(writer, "edit", page)
 }
+
+func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
+    view, _ := template.ParseFiles(filename + ".html")
+    view.Execute(writer, page)
+}
+
 func main() {
         http.HandleFunc(pathPrefix, viewHandler)
         http.HandleFunc("/edit/", editHandler)
