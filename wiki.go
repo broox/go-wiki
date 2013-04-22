@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"regexp"
 	"errors"
+	"fmt"
 )
 
 // A struct to represent a wiki page
@@ -69,7 +70,25 @@ func viewHandler(writer http.ResponseWriter, request *http.Request, title string
 		http.Redirect(writer, request, "/edit/"+title, http.StatusFound)
 		return
 	}
+
+	r := regexp.MustCompile("\\[([a-zA-Z]+)\\]")
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	page.Body = r.ReplaceAllFunc(page.Body, LinkTitle)
 	renderTemplate(writer, "view", page)
+}
+
+// Create links out of [PageTitle] text
+// FIXME: The output of this escaped to prevent XSS
+// We would need to link the titles at the template level rather than on Body so as
+// to not unescape other potentially dangerous content
+func LinkTitle(bytes []byte) []byte {
+	title := bytes[1:len(bytes)-1]
+	link := fmt.Sprintf("<a href=\"/view/%s\">%s</a>", title, title)
+	bytes = []byte(link)
+	return bytes
 }
 
 func editHandler(writer http.ResponseWriter, request *http.Request, title string) {
