@@ -31,6 +31,7 @@ func loadPage(title string) (*Page, error) {
 
 const pathPrefix = "/view/"
 const lenPath = len(pathPrefix)
+var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
 
 // add a view to load wiki pages by title at /view/
 func viewHandler(writer http.ResponseWriter, request *http.Request) {
@@ -66,13 +67,7 @@ func saveHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
-	view, err := template.ParseFiles(filename + ".html")
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = view.Execute(writer, page)
+	err := templates.ExecuteTemplate(writer, filename+".html", page)
 	if err != nil  {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
