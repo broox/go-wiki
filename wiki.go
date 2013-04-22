@@ -98,7 +98,13 @@ func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
 	}
 }
 
+// 301 root directory requests to FrontPage
+func goHome(writer http.ResponseWriter, request *http.Request) {
+	http.Redirect(writer, request, "/view/FrontPage", http.StatusFound)
+}
+
 func main() {
+	http.HandleFunc("/", goHome)
         http.HandleFunc("/view/", makeHandler(viewHandler))
         http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
