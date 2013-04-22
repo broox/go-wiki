@@ -46,12 +46,20 @@ func getTitle(writer http.ResponseWriter, request *http.Request) (title string, 
 	return
 }
 
-// add a view to load wiki pages by title at /view/
-func viewHandler(writer http.ResponseWriter, request *http.Request) {
-	title, err := getTitle(writer, request)
-	if err != nil {
-		return
+// Wrap the CRUD handlers to validate the title in a single place
+func makeHandler(handler func (http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		title := request.URL.Path[lenPath:]
+		if !titleValidator.MatchString(title) {
+			http.NotFound(writer, request)
+			return
+		}
+		handler(writer, request, title)
 	}
+}
+
+// add a view to load wiki pages by title at /view/
+func viewHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
 	if err != nil {
 		// If page can't be found, redirect to the form so we can create it
@@ -61,11 +69,7 @@ func viewHandler(writer http.ResponseWriter, request *http.Request) {
 	renderTemplate(writer, "view", page)
 }
 
-func editHandler(writer http.ResponseWriter, request *http.Request) {
-	title, err := getTitle(writer, request)
-	if err != nil {
-		return
-	}
+func editHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
 	if err != nil {
 		page = &Page{ Title: title }
@@ -73,14 +77,10 @@ func editHandler(writer http.ResponseWriter, request *http.Request) {
 	renderTemplate(writer, "edit", page)
 }
 
-func saveHandler(writer http.ResponseWriter, request *http.Request) {
-	title, err := getTitle(writer, request)
-	if err != nil {
-		return
-        }
+func saveHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	body := request.FormValue("body")
 	p := &Page{ Title: title, Body: []byte(body) }
-	err = p.save()
+	err := p.save()
 	if err != nil  {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
@@ -96,8 +96,8 @@ func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
 }
 
 func main() {
-        http.HandleFunc(pathPrefix, viewHandler)
-        http.HandleFunc("/edit/", editHandler)
-	http.HandleFunc("/save/", saveHandler)
+        http.HandleFunc("/view/", makeHandler(viewHandler))
+        http.HandleFunc("/edit/", makeHandler(editHandler))
+	http.HandleFunc("/save/", makeHandler(saveHandler))
         http.ListenAndServe(":8080", nil)
 }
