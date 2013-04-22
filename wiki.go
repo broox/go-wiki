@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"html/template"
+	"regexp"
+	"errors"
 )
 
 // A struct to represent a wiki page
@@ -32,10 +34,24 @@ func loadPage(title string) (*Page, error) {
 const pathPrefix = "/view/"
 const lenPath = len(pathPrefix)
 var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
+var titleValidator = regexp.MustCompile("^[a-zA-Z0-9]+$")
+
+// Validate a title and return it if valid
+func getTitle(writer http.ResponseWriter, request *http.Request) (title string, err error) {
+	title = request.URL.Path[lenPath:]
+	if !titleValidator.MatchString(title) {
+		http.NotFound(writer, request)
+		err = errors.New("Invalid Page Title")
+	}
+	return
+}
 
 // add a view to load wiki pages by title at /view/
 func viewHandler(writer http.ResponseWriter, request *http.Request) {
-	title := request.URL.Path[lenPath:]
+	title, err := getTitle(writer, request)
+	if err != nil {
+		return
+	}
 	page, err := loadPage(title)
 	if err != nil {
 		// If page can't be found, redirect to the form so we can create it
@@ -46,7 +62,10 @@ func viewHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func editHandler(writer http.ResponseWriter, request *http.Request) {
-	title := request.URL.Path[lenPath:]
+	title, err := getTitle(writer, request)
+	if err != nil {
+		return
+	}
 	page, err := loadPage(title)
 	if err != nil {
 		page = &Page{ Title: title }
@@ -55,10 +74,13 @@ func editHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func saveHandler(writer http.ResponseWriter, request *http.Request) {
-	title := request.URL.Path[lenPath:]
+	title, err := getTitle(writer, request)
+	if err != nil {
+		return
+        }
 	body := request.FormValue("body")
 	p := &Page{ Title: title, Body: []byte(body) }
-	err := p.save()
+	err = p.save()
 	if err != nil  {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
