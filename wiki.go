@@ -14,9 +14,11 @@ type Page struct {
 	Body []byte
 }
 
+const dataPath = "data/"
+
 // Add the save() function to our Page struct
 func (p *Page) save() error {
-	filename := p.Title + ".txt"
+	filename := dataPath + p.Title + ".txt"
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
@@ -24,7 +26,7 @@ func (p *Page) save() error {
 // It returns a Page struct, and an optional error
 func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
-	body, err := ioutil.ReadFile(filename)
+	body, err := ioutil.ReadFile(dataPath+filename)
 	if err != nil {
 		return nil, err
 	}
