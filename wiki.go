@@ -14,6 +14,7 @@ type Page struct {
 	Body []byte
 }
 
+const viewPath = "views/"
 const dataPath = "data/"
 
 // Add the save() function to our Page struct
@@ -35,7 +36,7 @@ func loadPage(title string) (*Page, error) {
 
 const pathPrefix = "/view/"
 const lenPath = len(pathPrefix)
-var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
+var templates = template.Must(template.ParseFiles(viewPath+"edit.html", viewPath+"view.html"))
 var titleValidator = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 // Validate a title and return it if valid
