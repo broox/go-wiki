@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"errors"
 	"fmt"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // A struct to represent a wiki page
@@ -19,7 +21,7 @@ const viewPath = "views/"
 const dataPath = "data/"
 
 // Add the save() function to our Page struct
-func (p *Page) save() error {
+func (p *Page) save(db *sql.DB) error {
 	filename := dataPath + p.Title + ".txt"
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
@@ -51,19 +53,21 @@ func getTitle(writer http.ResponseWriter, request *http.Request) (title string, 
 }
 
 // Wrap the CRUD handlers to validate the title in a single place
-func makeHandler(handler func (http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+func makeHandler(handler func (http.ResponseWriter, *http.Request, string, *sql.DB)) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		db := openDB()
 		title := request.URL.Path[lenPath:]
 		if !titleValidator.MatchString(title) {
 			http.NotFound(writer, request)
 			return
 		}
-		handler(writer, request, title)
+		handler(writer, request, title, db)
+		defer db.Close()
 	}
 }
 
 // add a view to load wiki pages by title at /view/
-func viewHandler(writer http.ResponseWriter, request *http.Request, title string) {
+func viewHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
 	page, err := loadPage(title)
 	if err != nil {
 		// If page can't be found, redirect to the form so we can create it
@@ -91,7 +95,7 @@ func LinkTitle(bytes []byte) []byte {
 	return bytes
 }
 
-func editHandler(writer http.ResponseWriter, request *http.Request, title string) {
+func editHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
 	page, err := loadPage(title)
 	if err != nil {
 		page = &Page{ Title: title }
@@ -99,10 +103,10 @@ func editHandler(writer http.ResponseWriter, request *http.Request, title string
 	renderTemplate(writer, "edit", page)
 }
 
-func saveHandler(writer http.ResponseWriter, request *http.Request, title string) {
+func saveHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
 	body := request.FormValue("body")
 	p := &Page{ Title: title, Body: []byte(body) }
-	err := p.save()
+	err := p.save(db)
 	if err != nil  {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,6 +124,14 @@ func renderTemplate(writer http.ResponseWriter, filename string, page *Page) {
 // 301 root directory requests to FrontPage
 func goHome(writer http.ResponseWriter, request *http.Request) {
 	http.Redirect(writer, request, "/view/FrontPage", http.StatusFound)
+}
+
+func openDB() (db *sql.DB) {
+        db, err := sql.Open("mysql","root:@/gowiki")
+        if err != nil {
+               panic(err)
+        }
+	return db
 }
 
 func main() {
