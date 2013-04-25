@@ -50,6 +50,17 @@ func getTitle(writer http.ResponseWriter, request *http.Request) (title string, 
     return
 }
 
+// Create links out of [PageTitle] text
+// FIXME: The output of this escaped to prevent XSS
+// We would need to link the titles at the template level rather than on Body so as
+// to not unescape other potentially dangerous content
+func LinkTitle(bytes []byte) []byte {
+    title := bytes[1:len(bytes)-1]
+    link := fmt.Sprintf("<a href=\"/view/%s\">%s</a>", title, title)
+    bytes = []byte(link)
+    return bytes
+}
+
 // Wrap the CRUD handlers to validate the title in a single place
 func makeHandler(handler func (http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
     return func(writer http.ResponseWriter, request *http.Request) {
@@ -78,17 +89,6 @@ func viewHandler(writer http.ResponseWriter, request *http.Request, title string
     }
     page.Body = r.ReplaceAllFunc(page.Body, LinkTitle)
     renderTemplate(writer, "view", page)
-}
-
-// Create links out of [PageTitle] text
-// FIXME: The output of this escaped to prevent XSS
-// We would need to link the titles at the template level rather than on Body so as
-// to not unescape other potentially dangerous content
-func LinkTitle(bytes []byte) []byte {
-    title := bytes[1:len(bytes)-1]
-    link := fmt.Sprintf("<a href=\"/view/%s\">%s</a>", title, title)
-    bytes = []byte(link)
-    return bytes
 }
 
 func editHandler(writer http.ResponseWriter, request *http.Request, title string) {
