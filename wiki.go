@@ -27,12 +27,12 @@ func (p *Page) save(db *sql.DB) error {
     }
 
     if existingPage == nil {
-            insert, err := db.Prepare("INSERT INTO `pages` (title, body, created_at) VALUES (?,?,NOW())")
-            if err != nil {
-                return err
-            }
-            defer insert.Close()
-            _, err = insert.Exec(p.Title, p.Body)
+        insert, err := db.Prepare("INSERT INTO pages (title, body, created_at) VALUES (?,?,NOW())")
+        if err != nil {
+            return err
+        }
+        defer insert.Close()
+        _, err = insert.Exec(p.Title, p.Body)
     } else {
         update, err := db.Prepare("UPDATE pages SET body = ?, updated_at = NOW() WHERE title = ?")
         if err != nil {
@@ -150,11 +150,12 @@ func goHome(writer http.ResponseWriter, request *http.Request) {
     http.Redirect(writer, request, "/view/FrontPage", http.StatusFound)
 }
 
+// Open a connection to a database for wiki storage
 func openDB() (db *sql.DB) {
-        db, err := sql.Open("mysql","root:@/gowiki")
-        if err != nil {
-               panic(err)
-        }
+    db, err := sql.Open("mysql","root:@/gowiki")
+    if err != nil {
+           panic(err)
+    }
     return db
 }
 
