@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"net/http"
 	"html/template"
 	"regexp"
@@ -22,15 +21,40 @@ const dataPath = "data/"
 
 // Add the save() function to our Page struct
 func (p *Page) save(db *sql.DB) error {
-	filename := dataPath + p.Title + ".txt"
-	return ioutil.WriteFile(filename, p.Body, 0600)
+	existingPage, err := loadPage(p.Title, db)
+	if err != nil {
+		return err
+	}
+
+	if existingPage == nil {
+       		insert, err := db.Prepare("INSERT INTO `pages` (title, body, created_at) VALUES (?,?,NOW())")
+        	if err != nil {
+                	return err
+        	}
+        	defer insert.Close()
+        	_, err = insert.Exec(p.Title, p.Body)
+	} else {
+		update, err := db.Prepare("UPDATE pages SET body = ?, updated_at = NOW() WHERE title = ?")
+		if err != nil {
+			return err
+		}
+		defer update.Close()
+		_, err = update.Exec(p.Body, p.Title)
+	}
+	return err
 }
 
 // loadPage is a function that loads a page by title
 // It returns a Page struct, and an optional error
-func loadPage(title string) (*Page, error) {
-	filename := title + ".txt"
-	body, err := ioutil.ReadFile(dataPath+filename)
+func loadPage(title string, db *sql.DB) (*Page, error) {
+	query, err := db.Prepare("SELECT title, body FROM pages WHERE title = ?")
+	if err != nil {
+		return nil, err
+	}
+
+        var body []byte
+
+	err = query.QueryRow(title).Scan(&title, &body)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +92,7 @@ func makeHandler(handler func (http.ResponseWriter, *http.Request, string, *sql.
 
 // add a view to load wiki pages by title at /view/
 func viewHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
-	page, err := loadPage(title)
+	page, err := loadPage(title, db)
 	if err != nil {
 		// If page can't be found, redirect to the form so we can create it
 		http.Redirect(writer, request, "/edit/"+title, http.StatusFound)
@@ -96,7 +120,7 @@ func LinkTitle(bytes []byte) []byte {
 }
 
 func editHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
-	page, err := loadPage(title)
+	page, err := loadPage(title, db)
 	if err != nil {
 		page = &Page{ Title: title }
 	}
