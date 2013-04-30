@@ -1,7 +1,6 @@
 package main
 
 import (
-    "io/ioutil"
     "net/http"
     "html/template"
     "regexp"
@@ -9,32 +8,8 @@ import (
     "fmt"
 )
 
-// A struct to represent a wiki page
-type Page struct {
-    Title string
-    Body []byte
-}
-
 const viewPath = "views/"
 const dataPath = "data/"
-
-// Add the save() function to our Page struct
-func (p *Page) save() error {
-    filename := dataPath + p.Title + ".txt"
-    return ioutil.WriteFile(filename, p.Body, 0600)
-}
-
-// loadPage is a function that loads a page by title
-// It returns a Page struct, and an optional error
-func loadPage(title string) (*Page, error) {
-    filename := title + ".txt"
-    body, err := ioutil.ReadFile(dataPath+filename)
-    if err != nil {
-        return nil, err
-    }
-    return &Page{ Title: title, Body: body }, nil
-}
-
 const pathPrefix = "/view/"
 const lenPath = len(pathPrefix)
 var templates = template.Must(template.ParseFiles(viewPath+"edit.html", viewPath+"view.html"))
