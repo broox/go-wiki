@@ -3,6 +3,7 @@ package main
 import (
     "database/sql"
     _ "github.com/go-sql-driver/mysql"
+    "fmt"
 )
 
 // A struct to represent a wiki page
@@ -53,4 +54,15 @@ func loadPage(title string, db *sql.DB) (*Page, error) {
         return nil, err
     }
     return &Page{ Title: title, Body: body }, nil
+}
+
+// Create links out of [PageTitle] text
+// FIXME: The output of this escaped to prevent XSS
+// We would need to link the titles at the template level rather than on Body so as
+// to not unescape other potentially dangerous content
+func LinkTitle(bytes []byte) []byte {
+    title := bytes[1:len(bytes)-1]
+    link := fmt.Sprintf("<a href=\"/view/%s\">%s</a>", title, title)
+    bytes = []byte(link)
+    return bytes
 }
