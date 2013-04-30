@@ -18,8 +18,6 @@ func (p *Page) save(db *sql.DB) error {
         return err
     }
 
-    p.Body = []byte("bleh")
-
     if existingPage == nil {
         insert, err := db.Prepare("INSERT INTO pages (title, body, created_at) VALUES (?,?,NOW())")
         if err != nil {
