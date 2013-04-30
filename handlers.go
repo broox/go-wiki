@@ -3,12 +3,11 @@ package main
 import (
     "net/http"
     "regexp"
-    "database/sql"
 )
 
 // add a view to load wiki pages by title at /view/
-func viewHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
-    page, err := loadPage(title, db)
+func viewHandler(writer http.ResponseWriter, request *http.Request, title string, context *Context) {
+    page, err := loadPage(title, context.Database)
     if err != nil {
         // If page can't be found, redirect to the form so we can create it
         http.Redirect(writer, request, "/edit/"+title, http.StatusFound)
@@ -24,18 +23,18 @@ func viewHandler(writer http.ResponseWriter, request *http.Request, title string
     renderTemplate(writer, "view", page)
 }
 
-func editHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
-    page, err := loadPage(title, db)
+func editHandler(writer http.ResponseWriter, request *http.Request, title string, context *Context) {
+    page, err := loadPage(title, context.Database)
     if err != nil {
         page = &Page{ Title: title }
     }
     renderTemplate(writer, "edit", page)
 }
 
-func saveHandler(writer http.ResponseWriter, request *http.Request, title string, db *sql.DB) {
+func saveHandler(writer http.ResponseWriter, request *http.Request, title string, context *Context) {
     body := request.FormValue("body")
     p := &Page{ Title: title, Body: []byte(body) }
-    err := p.save(db)
+    err := p.save(context.Database)
     if err != nil  {
         http.Error(writer, err.Error(), http.StatusInternalServerError)
         return
