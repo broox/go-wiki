@@ -3,7 +3,7 @@ package main
 import (
     "net/http"
     "regexp"
-    "github.com/gorilla/mux"
+    "github.com/gorilla/pat"
 )
 
 const viewPath = "views/"
@@ -18,8 +18,7 @@ func makeHandler(handler func (http.ResponseWriter, *http.Request, string, *Cont
             panic(err) // FIXME
         }
 
-        vars := mux.Vars(request)
-        title := vars["title"]
+        title := request.URL.Query().Get(":title")
 
         if !titleValidator.MatchString(title) {
             http.NotFound(writer, request)
@@ -36,11 +35,11 @@ func goHome(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
-    router := mux.NewRouter()
+    router := pat.New()
     router.HandleFunc("/", goHome)
-    router.HandleFunc("/view/{title}", makeHandler(viewHandler)).Methods("GET")
-    router.HandleFunc("/edit/{title}", makeHandler(editHandler)).Methods("GET")
-    router.HandleFunc("/save/{title}", makeHandler(saveHandler)).Methods("POST")
+    router.Get("/view/{title}", makeHandler(viewHandler))
+    router.Get("/edit/{title}", makeHandler(editHandler))
+    router.Post("/save/{title}", makeHandler(saveHandler))
     if err := http.ListenAndServe(":8080", router); err != nil {
         panic(err)
     }

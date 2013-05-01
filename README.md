@@ -35,7 +35,7 @@ Playing around with Go by doing a simple wiki tutorial and extending upon it a b
 6. Install some dependencies
 
         go get github.com/go-sql-driver/mysql
-        go get github.com/gorilla/mux
+        go get github.com/gorilla/pat
 
 6. Build the project via `go build gowiki`
 
