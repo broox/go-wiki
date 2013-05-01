@@ -3,13 +3,10 @@ package main
 import (
     "net/http"
     "regexp"
+    "github.com/gorilla/mux"
 )
 
 const viewPath = "views/"
-const dataPath = "data/"
-
-const pathPrefix = "/view/"
-const lenPath = len(pathPrefix)
 
 var titleValidator = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
@@ -20,7 +17,10 @@ func makeHandler(handler func (http.ResponseWriter, *http.Request, string, *Cont
         if err != nil {
             panic(err) // FIXME
         }
-        title := request.URL.Path[lenPath:]
+
+        vars := mux.Vars(request)
+        title := vars["title"]
+
         if !titleValidator.MatchString(title) {
             http.NotFound(writer, request)
             return
@@ -36,9 +36,12 @@ func goHome(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
-    http.HandleFunc("/", goHome)
-    http.HandleFunc("/view/", makeHandler(viewHandler))
-    http.HandleFunc("/edit/", makeHandler(editHandler))
-    http.HandleFunc("/save/", makeHandler(saveHandler))
-    http.ListenAndServe(":8080", nil)
+    router := mux.NewRouter()
+    router.HandleFunc("/", goHome)
+    router.HandleFunc("/view/{title}", makeHandler(viewHandler)).Methods("GET")
+    router.HandleFunc("/edit/{title}", makeHandler(editHandler)).Methods("GET")
+    router.HandleFunc("/save/{title}", makeHandler(saveHandler)).Methods("POST")
+    if err := http.ListenAndServe(":8080", router); err != nil {
+        panic(err)
+    }
 }
