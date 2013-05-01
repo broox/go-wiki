@@ -32,6 +32,11 @@ Playing around with Go by doing a simple wiki tutorial and extending upon it a b
             primary key (`id`)
         );
 
+6. Install some dependencies
+
+        go get github.com/go-sql-driver/mysql
+        go get github.com/gorilla/mux
+
 6. Build the project via `go build gowiki`
 
 7. Run the application via `gowiki`
