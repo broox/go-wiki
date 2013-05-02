@@ -7,7 +7,7 @@ import (
 
 // A struct to represent our configuration
 type Config struct {
-    Port string
+    Port string `json: "port"`
 }
 
 func (conf *Config) FromJson(path string) (err error) {
