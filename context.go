@@ -3,6 +3,8 @@ package main
 import(
 	"database/sql"
 	"net/http"
+    "log"
+    "fmt"
 )
 
 // A struct to store things in the context of a request
@@ -17,7 +19,13 @@ func (context *Context) Close() {
 
 // Create a new instance of Context with a database
 func NewContext(request *http.Request) (*Context, error) {
-    db, err := sql.Open("mysql","root:@/gowiki")
+    connection := fmt.Sprintf("%s:%s@%s/%s", config.Database.User,
+                                             config.Database.Password,
+                                             config.Database.Host,
+                                             config.Database.Name)
+
+    log.Printf("Connecting to the `%s` database", config.Database.Name)
+    db, err := sql.Open("mysql",connection)
     if err != nil {
         return nil, err
     }

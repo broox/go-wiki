@@ -9,6 +9,7 @@ import (
 
 const viewPath = "views/"
 
+var config = &Config{}
 var titleValidator = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 // Wrap the CRUD handlers to validate the title in a single place
@@ -36,7 +37,6 @@ func goHome(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
-    config := &Config{}
     if err := config.FromJson("./config.json"); err != nil {
         log.Fatal("Cannot find config file. ", err)
         return

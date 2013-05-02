@@ -7,7 +7,13 @@ import (
 
 // A struct to represent our configuration
 type Config struct {
-    Port string `json: "port"`
+    Port string
+    Database struct {
+        User string
+        Password string `json: "pass"`
+        Host string
+        Name string
+    }
 }
 
 func (conf *Config) FromJson(path string) (err error) {
