@@ -4,6 +4,7 @@ import (
     "net/http"
     "regexp"
     "github.com/gorilla/pat"
+    "log"
 )
 
 const viewPath = "views/"
@@ -35,12 +36,21 @@ func goHome(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
+    config := &Config{}
+    if err := config.FromJson("./config.json"); err != nil {
+        log.Fatal("Cannot find config file. ", err)
+        return
+    }
+
+    log.Println("Running Wiki on",config.Port)
+
     router := pat.New()
     router.HandleFunc("/", goHome)
     router.Get("/view/{title}", makeHandler(viewHandler))
     router.Get("/edit/{title}", makeHandler(editHandler))
     router.Post("/save/{title}", makeHandler(saveHandler))
-    if err := http.ListenAndServe(":8080", router); err != nil {
-        panic(err)
+    if err := http.ListenAndServe(config.Port, router); err != nil {
+        log.Fatal("Error starting webserver. ", err)
+        return
     }
 }
